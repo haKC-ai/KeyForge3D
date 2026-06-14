@@ -243,6 +243,71 @@ def generate_stl(key_contour: np.ndarray, bitting: list[int],
     return output_path
 
 
+# ── annotation ──────────────────────────────────────────────────────────────
+
+def annotate_image(
+    image_path: str,
+    key_contour: np.ndarray,
+    bitting: list[int],
+    spec: dict,
+    x: int, y: int, w: int, h: int,
+    output_path: str,
+) -> str:
+    """
+    Draw detection overlay on source image:
+    - green contour outline
+    - orange vertical cut markers on blade
+    - bitting value label above each marker
+    - format + bitting code banner at top
+    Save to output_path and return it.
+    """
+    img = cv2.imread(image_path)
+    if img is None:
+        return ""
+
+    overlay = img.copy()
+    ORANGE = (0, 140, 255)
+    GREEN  = (0, 220, 80)
+    WHITE  = (255, 255, 255)
+    BLACK  = (0, 0, 0)
+
+    # Key contour
+    cv2.drawContours(overlay, [key_contour], -1, GREEN, 2)
+
+    # Cut position markers + depth labels
+    num_cuts = spec["num_cuts"]
+    seg_w = w // num_cuts
+    blade_y = y + h // 2  # top of blade region
+
+    for i, depth_val in enumerate(bitting):
+        cx = x + i * seg_w + seg_w // 2
+        cut_depth_px = int((depth_val * spec["depth_increment_mm"]) *
+                           (h / spec["blade_width_mm"]))
+        # Vertical marker line
+        cv2.line(overlay, (cx, blade_y), (cx, blade_y + cut_depth_px), ORANGE, 2)
+        # Circle at cut bottom
+        cv2.circle(overlay, (cx, blade_y + cut_depth_px), 5, ORANGE, -1)
+        # Depth value label
+        label = str(depth_val)
+        (lw, lh), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+        cv2.rectangle(overlay, (cx - lw//2 - 2, blade_y - lh - 8),
+                      (cx + lw//2 + 2, blade_y - 2), BLACK, -1)
+        cv2.putText(overlay, label, (cx - lw//2, blade_y - 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, ORANGE, 2)
+
+    # Banner: format + bitting code
+    bitting_str = " ".join(str(b) for b in bitting)
+    banner = f"{spec.get('_fmt','?')}  [{', '.join(str(b) for b in bitting)}]"
+    cv2.rectangle(overlay, (0, 0), (img.shape[1], 36), BLACK, -1)
+    cv2.putText(overlay, banner, (8, 26),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, ORANGE, 2)
+
+    # Blend overlay with original (semi-transparent contour layer)
+    result = cv2.addWeighted(overlay, 0.85, img, 0.15, 0)
+    cv2.imwrite(output_path, result)
+    return output_path
+
+
 # ── main pipeline ───────────────────────────────────────────────────────────
 
 def analyze_image(
@@ -335,6 +400,14 @@ def analyze_image(
     except Exception as e:
         stl_path = f"STL generation failed: {e}"
 
+    # Annotated image
+    spec["_fmt"] = fmt  # pass fmt into annotator for banner
+    annotated_path = str(output_dir_resolved / f"{stem}_{safe_fmt}_annotated.jpg")
+    annotate_image(image_path, key_contour, bitting, spec, x, y, w, h, annotated_path)
+
+    # JSON report
+    report_path = str(output_dir_resolved / f"{stem}_{safe_fmt}_report.json")
+
     result = KeyAnalysisResult(
         timestamp=ts,
         image_path=str(Path(image_path).resolve()),
@@ -353,6 +426,13 @@ def analyze_image(
     )
 
     _log_result(result)
+
+    # Write JSON report
+    d = result.to_dict()
+    d["annotated_image"] = annotated_path
+    with open(report_path, "w") as f:
+        json.dump(d, f, indent=2)
+
     return result
 
 
