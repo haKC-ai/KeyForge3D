@@ -26,7 +26,9 @@ import exifread
 from key_specs import get_spec, KNOWN_FORMATS
 from stl_sanitizer import sanitize as sanitize_stl
 
-LOG_FILE = "key_log.csv"
+# Anchor to repo directory regardless of cwd
+_BASE = Path(__file__).parent.resolve()
+LOG_FILE = str(_BASE / "key_log.csv")
 LOG_FIELDS = [
     "timestamp", "image_path", "key_format", "brand",
     "num_cuts", "bitting_code", "depth_increment_mm",
@@ -186,8 +188,8 @@ def detect_key_format(image_path: str) -> tuple[str, str, str]:
             r.get("brand", "Unknown"),
             r.get("notes", ""),
         )
-    except Exception as e:
-        return "UNKNOWN", "Unknown", str(e)
+    except Exception:
+        return "UNKNOWN", "Unknown", "AI detection unavailable"
 
 
 # ── bitting analysis ────────────────────────────────────────────────────────
@@ -306,9 +308,27 @@ def analyze_image(
     bitting_str = " ".join(str(b) for b in bitting)
 
     stem = Path(image_path).stem
-    stl_name = f"{stem}_{fmt}_{bitting_str.replace(' ', '')}.stl"
-    stl_path = str(Path(output_dir) / stl_name)
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    # Sanitize fmt: only allow known format codes in filename (already validated by caller,
+    # but defend in depth — strip anything that isn't alphanumeric)
+    safe_fmt = "".join(c for c in fmt if c.isalnum())
+    stl_name = f"{stem}_{safe_fmt}_{bitting_str.replace(' ', '')}.stl"
+    output_dir_resolved = Path(output_dir).resolve()
+    output_dir_resolved.mkdir(parents=True, exist_ok=True)
+    stl_path = str(output_dir_resolved / stl_name)
+
+    # Containment check: ensure resolved stl_path stays inside output_dir
+    try:
+        Path(stl_path).resolve().relative_to(output_dir_resolved)
+    except ValueError:
+        return KeyAnalysisResult(
+            timestamp=ts, image_path=image_path, key_format=fmt, brand=brand,
+            num_cuts=spec["num_cuts"], bitting_code=bitting_str, bitting_list=bitting,
+            depth_increment_mm=spec["depth_increment_mm"],
+            cut_spacing_mm=spec["cut_spacing_mm"],
+            tip_to_first_cut_mm=spec["tip_to_first_cut_mm"],
+            stl_path="", exif=exif, gps=gps, vision_notes=vision_notes,
+            error="Output path containment check failed",
+        )
 
     try:
         generate_stl(key_contour, bitting, spec, h, w, stl_path)
