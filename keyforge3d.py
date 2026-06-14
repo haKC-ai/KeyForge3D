@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import os
+from stl_sanitizer import sanitize as sanitize_stl
 
 class KeyForge3DApp:
     def __init__(self, root):
@@ -125,6 +126,7 @@ class KeyForge3DApp:
             # Export the 3D model as STL
             output_path = "key_model.stl"
             key_mesh.export(output_path)
+            sanitize_stl(output_path)  # strip header/creation metadata
 
             # Display the results
             bitting_code = [int(d / self.cut_depth_increment) for d in bitting]
