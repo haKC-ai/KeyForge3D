@@ -64,6 +64,7 @@ class KeyAnalysisResult:
     gps: dict | None
     vision_notes: str
     error: str | None = None
+    annotated_image: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -423,6 +424,7 @@ def analyze_image(
         exif=exif,
         gps=gps,
         vision_notes=vision_notes,
+        annotated_image=annotated_path,
     )
 
     _log_result(result)

@@ -1,0 +1,7 @@
+timestamp,image_path,key_format,brand,num_cuts,bitting_code,depth_increment_mm,stl_output,notes
+2026-06-15T13:02:10.673682+00:00,/tmp/tmpdats17ne.jpg,KW1,Kwikset,5,1 1 1 1 1,0.333,/home/hakcer/ghostkey/analysis/key_findings/tmpdats17ne_KW1_11111.stl,
+2026-06-15T13:07:05.116270+00:00,/tmp/tmp5lc_hsxh.jpg,KW1,Kwikset,5,1 1 1 1 1,0.333,/home/hakcer/ghostkey/analysis/key_findings/tmp5lc_hsxh_KW1_11111.stl,
+2026-06-15T13:07:10.985196+00:00,/tmp/tmpah099ljt.jpg,KW1,Kwikset,5,1 1 1 1 1,0.333,/home/hakcer/ghostkey/analysis/key_findings/tmpah099ljt_KW1_11111.stl,
+2026-06-15T13:07:24.320603+00:00,/tmp/tmp1uiq4zzm.jpeg,KW1,Kwikset,5,1 1 1 1 1,0.333,/home/hakcer/ghostkey/analysis/key_findings/tmp1uiq4zzm_KW1_11111.stl,
+2026-06-15T13:08:24.523359+00:00,/tmp/tmpe20fbnzs.jpg,KW1,Kwikset,5,1 1 1 3 6,0.333,STL generation failed: Not all meshes are volumes!,
+2026-06-15T13:08:37.094317+00:00,/tmp/tmpuz_1jwkm.jpg,KW1,Kwikset,5,1 1 7 1 1,0.333,/home/hakcer/ghostkey/analysis/key_findings/tmpuz_1jwkm_KW1_11711.stl,
